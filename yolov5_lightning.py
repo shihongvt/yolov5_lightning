@@ -7,11 +7,11 @@ import pandas as pd
 import os
 import pytorch_lightning as pl
 from torch.optim import Adam
-import torch.nn as nn  
+import torch.nn as nn
 
 
+#----- Now you are the engineer -----#
 # Datasets
-
 class CustomDataset(Dataset):
     def __init__(self, image_folder, label_file=None, labels=None, transform=None):
         self.image_folder = image_folder
@@ -28,32 +28,22 @@ class CustomDataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        img_name = os.path.join(self.image_folder, self.labels.iloc[idx, 0])
-        image = Image.open(img_name)
-        value = int(self.labels.iloc[idx, 1])
-
+        # extract column values from the row
+        img_name, value = self.labels.iloc[idx, :]
+        # create the abosolute path of the image
+        img_path = os.path.join(self.image_folder, img_name)
+        # load the image
+        image = Image.open(img_path)
+        # apply transformation if any
         if self.transform:
             image = self.transform(image)
-
+        # return the image and the label
         return image, value
-
-transform = transforms.Compose([
-    transforms.Resize((256, 256)),  
-    transforms.ToTensor(),
-])
-
-image_folder_path = "/home/shihong/data/mock_lightning/train/image"
-label_file_path = "/home/shihong/data/mock_lightning/train/label.csv"
-
-dataset = CustomDataset(image_folder=image_folder_path, label_file=label_file_path, transform=transform)
-
-
-# Loader
-
-train_dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
 
 # Module
+## TODO: add transform to the dataloader
+////
 
 class CustomDataModule(pl.LightningDataModule):
     def __init__(self, train_image_folder, train_label_file, batch_size=32, val_split=0.2):
@@ -62,9 +52,14 @@ class CustomDataModule(pl.LightningDataModule):
         self.label_file = train_label_file
         self.batch_size = batch_size
 
-        full_dataset = CustomDataset(image_folder=self.image_folder, label_file=self.label_file)
+
+        full_dataset = CustomDataset(
+            image_folder=self.image_folder,
+            label_file=self.label_file)
+        # configure each split sizes
         train_len = int((1.0 - val_split) * len(full_dataset))
         val_len = len(full_dataset) - train_len
+        # split the dataset
         self.train_dataset, self.val_dataset = torch.utils.data.random_split(full_dataset, [train_len, val_len])
 
     def train_dataloader(self):
@@ -113,7 +108,28 @@ class YOLOv5Regression(pl.LightningModule):
         return optimizer
 
 
-data_module = CustomDataModule(train_image_folder="/home/shihong/data/mock_lightning/train/image", train_label_file="/home/shihong/data/mock_lightning/train/label.csv")
+#----- Now you are the user -----#
+
+transform = transforms.Compose([
+    transforms.Resize((256, 256)),
+    transforms.ToTensor(),
+])
+
+# revision of the path constants
+# when constants, all capital letters
+PATH_DATA = os.path.join("home", "shihong", "data", "mock_lightning", "train")
+PATH_IMAGE = os.path.join(PATH_DATA, "image")
+PATH_LABEL = os.path.join(PATH_DATA, "label.csv")
+
+
+dataset = CustomDataset(image_folder=PATH_IMAGE,
+                        label_file=PATH_LABEL,
+                        transform=transform)
+
+train_dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+
+data_module = CustomDataModule(train_image_folder=PATH_IMAGE,
+                               train_label_file=PATH_LABEL)
 model = YOLOv5Regression() 
 trainer = pl.Trainer(max_epochs=10)
 trainer.fit(model, datamodule=data_module)
