@@ -117,3 +117,5 @@ data_module = CustomDataModule(train_image_folder="/home/shihong/data/mock_light
 model = YOLOv5Regression() 
 trainer = pl.Trainer(max_epochs=10)
 trainer.fit(model, datamodule=data_module)
+
+# Trying the model??
