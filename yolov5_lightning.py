@@ -49,16 +49,12 @@ class CustomDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.transform = transform
 
-        full_dataset = CustomDataset(
-            image_folder=self.image_folder,
-            label_file=self.label_file,
-            transform=self.transform)   # Pass the transform here
+        all_labels = pd.read_csv(train_label_file)
+        train_len = int((1.0 - val_split) * len(all_labels))
+        train_labels, val_labels = torch.utils.data.random_split(all_labels, [train_len, len(all_labels) - train_len])
 
-        # configure each split sizes
-        train_len = int((1.0 - val_split) * len(full_dataset))
-        val_len = len(full_dataset) - train_len
-        # split the dataset
-        self.train_dataset, self.val_dataset = torch.utils.data.random_split(full_dataset, [train_len, val_len])
+        self.train_dataset = CustomDataset(image_folder=self.image_folder, labels=train_labels, transform=self.transform)
+        self.val_dataset = CustomDataset(image_folder=self.image_folder, labels=val_labels, transform=self.transform)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
@@ -132,10 +128,7 @@ dataset = CustomDataset(image_folder=PATH_IMAGE,
 
 train_dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
 
-data_module = CustomDataModule(train_image_folder=PATH_IMAGE,
-                               train_label_file=PATH_LABEL)
+data_module = CustomDataModule(train_image_folder=PATH_IMAGE, train_label_file=PATH_LABEL, transform=transform)
 model = YOLOv5Regression() 
 trainer = pl.Trainer(max_epochs=10)
 trainer.fit(model, datamodule=data_module)
-
-# Trying the model??
