@@ -91,17 +91,21 @@ class YOLOv5Regression(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch  
-        y_hat = self(x)  
-        loss = self.criterion(y_hat, y)
+        y_hat = self(x).squeeze()  # You might need to squeeze your outputs to match target dimensions
+        loss = self.criterion(y_hat, y.float())  # Ensure y is a float tensor
         self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch  
-        y_hat = self(x)
-        loss = self.criterion(y_hat, y)
+        y_hat = self(x).squeeze()
+        loss = self.criterion(y_hat, y.float())
         self.log('val_loss', loss)
-        return loss
+        return {"val_loss": loss}
+
+    def validation_epoch_end(self, outputs):
+        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
+        self.log('avg_val_loss', avg_loss)
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-3)
@@ -111,8 +115,9 @@ class YOLOv5Regression(pl.LightningModule):
 #----- Now you are the user -----#
 
 transform = transforms.Compose([
-    transforms.Resize((256, 256)),
+    transforms.Resize((640, 640)),  # adjust this size if necessary
     transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # common normalization values, adjust if necessary
 ])
 
 # revision of the path constants
