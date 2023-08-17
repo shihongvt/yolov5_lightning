@@ -41,21 +41,19 @@ class CustomDataset(Dataset):
         return image, value
 
 
-# Module
-## TODO: add transform to the dataloader
-////
-
 class CustomDataModule(pl.LightningDataModule):
-    def __init__(self, train_image_folder, train_label_file, batch_size=32, val_split=0.2):
+    def __init__(self, train_image_folder, train_label_file, transform, batch_size=32, val_split=0.2):
         super(CustomDataModule, self).__init__()
         self.image_folder = train_image_folder
         self.label_file = train_label_file
         self.batch_size = batch_size
-
+        self.transform = transform
 
         full_dataset = CustomDataset(
             image_folder=self.image_folder,
-            label_file=self.label_file)
+            label_file=self.label_file,
+            transform=self.transform)   # Pass the transform here
+
         # configure each split sizes
         train_len = int((1.0 - val_split) * len(full_dataset))
         val_len = len(full_dataset) - train_len
@@ -67,6 +65,7 @@ class CustomDataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
+
 
 
 # Model architecture
