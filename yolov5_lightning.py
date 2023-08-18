@@ -8,59 +8,75 @@ import os
 import pytorch_lightning as pl
 from torch.optim import Adam
 import torch.nn as nn
+from pytorch_lightning.callbacks import ModelCheckpoint
 
-
-#----- Now you are the engineer -----#
 # Datasets
+
+""" 
+
+- Dataset Directory Structure:
+train/
+├── images/
+│   ├── image1.jpg
+│   ├── image2.jpg
+│   └── ...
+└── labels.csv 
+
+- Labels File Format:
+image_name,label_value
+image1.jpg,23.4
+image2.jpg,45.1
+...
+
+"""
+
 class CustomDataset(Dataset):
-    def __init__(self, image_folder, label_file=None, labels=None, transform=None):
-        self.image_folder = image_folder
+    def __init__(self, data, transform=None):
+        self.data = data
         self.transform = transform
 
-        if label_file:
-            self.labels = pd.read_csv(label_file)
-        elif labels is not None:
-            self.labels = labels
-        else:
-            raise ValueError("Either label_file or labels should be provided.")
-
     def __len__(self):
-        return len(self.labels)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        # extract column values from the row
-        img_name, value = self.labels.iloc[idx, :]
-        # create the abosolute path of the image
-        img_path = os.path.join(self.image_folder, img_name)
-        # load the image
+        # Check if self.data is a Subset
+        if isinstance(self.data, torch.utils.data.Subset):
+            idx = self.data.indices[idx]  # Convert Subset index to original DataFrame index
+            actual_data = self.data.dataset
+        else:
+            actual_data = self.data
+
+        # Now access the data
+        img_path = actual_data.iloc[idx]["image_path"]
+        label_value = actual_data.iloc[idx]["label"]
+
         image = Image.open(img_path)
-        # apply transformation if any
         if self.transform:
             image = self.transform(image)
-        # return the image and the label
-        return image, value
+        return image, label_value
 
 
 class CustomDataModule(pl.LightningDataModule):
-    def __init__(self, train_image_folder, train_label_file, transform, batch_size=32, val_split=0.2):
+    def __init__(self, image_folder, label_file, transform, batch_size=4, val_split=0.2):
         super(CustomDataModule, self).__init__()
-        self.image_folder = train_image_folder
-        self.label_file = train_label_file
+        self.image_folder = image_folder
+        self.label_file = label_file
         self.batch_size = batch_size
         self.transform = transform
 
-        all_labels = pd.read_csv(train_label_file)
-        train_len = int((1.0 - val_split) * len(all_labels))
-        train_labels, val_labels = torch.utils.data.random_split(all_labels, [train_len, len(all_labels) - train_len])
+        # Read labels into a DataFrame and add full image paths
+        all_data = pd.read_csv(label_file)
+        all_data["image_path"] = all_data["filename"].apply(lambda x: os.path.join(self.image_folder, x))
 
-        self.train_dataset = CustomDataset(image_folder=self.image_folder, labels=train_labels, transform=self.transform)
-        self.val_dataset = CustomDataset(image_folder=self.image_folder, labels=val_labels, transform=self.transform)
+        train_len = int((1.0 - val_split) * len(all_data))
+        self.train_data, self.val_data = torch.utils.data.random_split(all_data, [train_len, len(all_data) - train_len])
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(CustomDataset(self.train_data, transform=self.transform), batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(CustomDataset(self.val_data, transform=self.transform), batch_size=self.batch_size, shuffle=False)
+
 
 
 
@@ -70,10 +86,13 @@ class YOLOv5Regression(pl.LightningModule):
     def __init__(self):
         super(YOLOv5Regression, self).__init__()
         self.yolov5_backbone = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-        self.features = self.yolov5_backbone.model[0]
+        
+        # Use only the layers up to index 23 (excluding the detection head)
+        self.features = nn.Sequential(*list(self.yolov5_backbone.model.children())[:-1][:24])
+        
         self.regression_head = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(1280 * 8 * 8, 512),
+            nn.Linear(512 * 60 * 40, 512),  # Adjusted the input size
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(512, 1)
@@ -83,6 +102,8 @@ class YOLOv5Regression(pl.LightningModule):
     def forward(self, x):
         x = self.features(x)
         return self.regression_head(x)
+
+
 
     def training_step(self, batch, batch_idx):
         x, y = batch  
@@ -95,12 +116,17 @@ class YOLOv5Regression(pl.LightningModule):
         x, y = batch  
         y_hat = self(x).squeeze()
         loss = self.criterion(y_hat, y.float())
-        self.log('val_loss', loss)
+        if not hasattr(self, "val_losses"):
+            self.val_losses = []
+        self.val_losses.append(loss)
+        self.log('val_loss_step', loss)
         return {"val_loss": loss}
 
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
+    def on_validation_epoch_end(self):
+        avg_loss = torch.mean(torch.stack(self.val_losses))
         self.log('avg_val_loss', avg_loss)
+        # reset the val_losses for the next epoch
+        self.val_losses = []
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-3)
@@ -110,25 +136,35 @@ class YOLOv5Regression(pl.LightningModule):
 #----- Now you are the user -----#
 
 transform = transforms.Compose([
-    transforms.Resize((640, 640)),  # adjust this size if necessary
+    transforms.Resize((640, 640)),  
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # common normalization values, adjust if necessary
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# revision of the path constants
-# when constants, all capital letters
-PATH_DATA = os.path.join("home", "shihong", "data", "mock_lightning", "train")
+PATH_DATA = os.path.join("/home", "shihong", "data", "mock_lightning", "train")
 PATH_IMAGE = os.path.join(PATH_DATA, "image")
 PATH_LABEL = os.path.join(PATH_DATA, "label.csv")
 
+# Initialize the CustomDataModule
+data_module = CustomDataModule(image_folder=PATH_IMAGE, label_file=PATH_LABEL, transform=transform, batch_size=4)
 
-dataset = CustomDataset(image_folder=PATH_IMAGE,
-                        label_file=PATH_LABEL,
-                        transform=transform)
-
-train_dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-
-data_module = CustomDataModule(train_image_folder=PATH_IMAGE, train_label_file=PATH_LABEL, transform=transform)
 model = YOLOv5Regression() 
-trainer = pl.Trainer(max_epochs=10)
+
+checkpoint_callback = ModelCheckpoint(
+    monitor='avg_val_loss',   # Save the model with the best validation loss
+    dirpath='/home/shihong/data/mock_lightning/saved_models/',  # Directory where you want to save the model
+    filename='model-{epoch:02d}-{avg_val_loss:.2f}',  # Naming scheme
+    save_top_k=3,  # Save only the top 3 models (based on the monitor metric, i.e., 'avg_val_loss' here)
+    mode='min',  # 'min' for metrics where lower is better (like loss), 'max' for metrics where higher is better (like accuracy)
+)
+
+# Train the model
+trainer = pl.Trainer(max_epochs=10, callbacks=[checkpoint_callback])
 trainer.fit(model, datamodule=data_module)
+
+
+# After training
+trainer.fit(model, datamodule=data_module)
+
+# Evaluate the model on the test dataset
+trainer.test(model, datamodule=data_module)
