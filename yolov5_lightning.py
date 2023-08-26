@@ -9,26 +9,11 @@ from torch.optim import Adam
 import torch.nn as nn
 from pytorch_lightning.callbacks import ModelCheckpoint
 
+# -*- coding: utf-8 -*-
 
 # Dataset Directory Structure:
 
-""" 
 
-- Dataset Directory Structure:
-train/
-├── images/
-│   ├── image1.jpg
-│   ├── image2.jpg
-│   └── ...
-└── labels.csv 
-
-- Labels File Format:
-image_name,label_value
-image1.jpg,23.4
-image2.jpg,45.1
-...
-
-"""
 
 
 # CustomDataset Class: fetch individual image-label pairs (given an index)
@@ -184,10 +169,6 @@ checkpoint_callback = ModelCheckpoint(
 
 # Train the model
 trainer = pl.Trainer(max_epochs=10, callbacks=[checkpoint_callback])
-trainer.fit(model, datamodule=data_module)
-
-
-# After training
 trainer.fit(model, datamodule=data_module)
 
 # Evaluate the model on the test dataset
