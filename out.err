@@ -1,18 +1,19 @@
+/home/shihong/.local/lib/python3.8/site-packages/torch/hub.py:286: UserWarning: You are about to download and run code from an untrusted repository. In a future release, this won't be allowed. To add the repository to your trusted list, change the command to {calling_fn}(..., trust_repo=False) and a command prompt will appear asking for an explicit confirmation of trust, or load(..., trust_repo=True), which will assume that the prompt is to be answered with 'yes'. You can also use load(..., trust_repo='check') which will only prompt for confirmation if the repo is not already trusted. This will eventually be the default behaviour
+  warnings.warn(
+Downloading: "https://github.com/ultralytics/yolov5/zipball/master" to /home/shihong/.cache/torch/hub/master.zip
 Traceback (most recent call last):
-  File "yolov5_lightning.py", line 156, in <module>
-    data_module = CustomDataModule(
-  File "yolov5_lightning.py", line 60, in __init__
-    all_data = pd.read_csv(label_file)
-  File "/apps/easybuild/software/tinkercliffs-rome_dgx-a100/Anaconda3/2020.11/lib/python3.8/site-packages/pandas/io/parsers.py", line 686, in read_csv
-    return _read(filepath_or_buffer, kwds)
-  File "/apps/easybuild/software/tinkercliffs-rome_dgx-a100/Anaconda3/2020.11/lib/python3.8/site-packages/pandas/io/parsers.py", line 452, in _read
-    parser = TextFileReader(fp_or_buf, **kwds)
-  File "/apps/easybuild/software/tinkercliffs-rome_dgx-a100/Anaconda3/2020.11/lib/python3.8/site-packages/pandas/io/parsers.py", line 946, in __init__
-    self._make_engine(self.engine)
-  File "/apps/easybuild/software/tinkercliffs-rome_dgx-a100/Anaconda3/2020.11/lib/python3.8/site-packages/pandas/io/parsers.py", line 1178, in _make_engine
-    self._engine = CParserWrapper(self.f, **self.options)
-  File "/apps/easybuild/software/tinkercliffs-rome_dgx-a100/Anaconda3/2020.11/lib/python3.8/site-packages/pandas/io/parsers.py", line 2008, in __init__
-    self._reader = parsers.TextReader(src, **kwds)
-  File "pandas/_libs/parsers.pyx", line 382, in pandas._libs.parsers.TextReader.__cinit__
-  File "pandas/_libs/parsers.pyx", line 674, in pandas._libs.parsers.TextReader._setup_parser_source
-FileNotFoundError: [Errno 2] No such file or directory: '/home/shihong/data/mock_lightning/train/label.csv'
+  File "yolov5_lightning.py", line 160, in <module>
+    model = YOLOv5Regression()
+  File "yolov5_lightning.py", line 91, in __init__
+    self.yolov5_backbone = torch.hub.load(
+  File "/home/shihong/.local/lib/python3.8/site-packages/torch/hub.py", line 558, in load
+    model = _load_local(repo_or_dir, model, *args, **kwargs)
+  File "/home/shihong/.local/lib/python3.8/site-packages/torch/hub.py", line 587, in _load_local
+    model = entry(*args, **kwargs)
+  File "/home/shihong/.cache/torch/hub/ultralytics_yolov5_master/hubconf.py", line 93, in yolov5s
+    return _create('yolov5s', pretrained, channels, classes, autoshape, _verbose, device)
+  File "/home/shihong/.cache/torch/hub/ultralytics_yolov5_master/hubconf.py", line 33, in _create
+    from models.common import AutoShape, DetectMultiBackend
+  File "/home/shihong/.cache/torch/hub/ultralytics_yolov5_master/models/common.py", line 18, in <module>
+    import cv2
+ModuleNotFoundError: No module named 'cv2'

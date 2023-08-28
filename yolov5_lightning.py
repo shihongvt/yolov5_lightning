@@ -148,7 +148,7 @@ transform = transforms.Compose(
     ]
 )
 
-PATH_DATA = os.path.join("/home", "shihong", "data", "mock_lightning", "train")
+PATH_DATA = os.path.join("/home", "shihong", "yolov5_lightning", "data", "mock_lightning", "train")
 PATH_IMAGE = os.path.join(PATH_DATA, "image")
 PATH_LABEL = os.path.join(PATH_DATA, "label.csv")
 
@@ -161,7 +161,7 @@ model = YOLOv5Regression()
 
 checkpoint_callback = ModelCheckpoint(
     monitor="avg_val_loss",  # Save the model with the best validation loss
-    dirpath="/home/shihong/data/mock_lightning/saved_models/",  # Directory where you want to save the model
+    dirpath="/home/shihong/yolov5_lightning/data/mock_lightning/saved_models/",  # Directory where you want to save the model
     filename="model-{epoch:02d}-{avg_val_loss:.2f}",  # Naming scheme
     save_top_k=3,  # Save only the top 3 models
     mode="min",  # 'min' for metrics where lower is better (like loss), 'max' for metrics where higher is better (like accuracy)
