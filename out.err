@@ -1,19 +1,24 @@
-/home/shihong/.local/lib/python3.8/site-packages/torch/hub.py:286: UserWarning: You are about to download and run code from an untrusted repository. In a future release, this won't be allowed. To add the repository to your trusted list, change the command to {calling_fn}(..., trust_repo=False) and a command prompt will appear asking for an explicit confirmation of trust, or load(..., trust_repo=True), which will assume that the prompt is to be answered with 'yes'. You can also use load(..., trust_repo='check') which will only prompt for confirmation if the repo is not already trusted. This will eventually be the default behaviour
-  warnings.warn(
-Downloading: "https://github.com/ultralytics/yolov5/zipball/master" to /home/shihong/.cache/torch/hub/master.zip
-Traceback (most recent call last):
-  File "yolov5_lightning.py", line 160, in <module>
-    model = YOLOv5Regression()
-  File "yolov5_lightning.py", line 91, in __init__
-    self.yolov5_backbone = torch.hub.load(
-  File "/home/shihong/.local/lib/python3.8/site-packages/torch/hub.py", line 558, in load
-    model = _load_local(repo_or_dir, model, *args, **kwargs)
-  File "/home/shihong/.local/lib/python3.8/site-packages/torch/hub.py", line 587, in _load_local
-    model = entry(*args, **kwargs)
-  File "/home/shihong/.cache/torch/hub/ultralytics_yolov5_master/hubconf.py", line 93, in yolov5s
-    return _create('yolov5s', pretrained, channels, classes, autoshape, _verbose, device)
-  File "/home/shihong/.cache/torch/hub/ultralytics_yolov5_master/hubconf.py", line 33, in _create
-    from models.common import AutoShape, DetectMultiBackend
-  File "/home/shihong/.cache/torch/hub/ultralytics_yolov5_master/models/common.py", line 18, in <module>
-    import cv2
-ModuleNotFoundError: No module named 'cv2'
+Using cache found in /home/shihong/.cache/torch/hub/ultralytics_yolov5_master
+YOLOv5 🚀 2023-8-28 Python-3.11.4 torch-2.0.1 CPU
+
+Fusing layers... 
+YOLOv5s summary: 213 layers, 7225885 parameters, 0 gradients
+Adding AutoShape... 
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+
+  | Name            | Type       | Params
+-----------------------------------------------
+0 | yolov5_backbone | AutoShape  | 7.2 M 
+1 | features        | Sequential | 0     
+2 | regression_head | Sequential | 629 M 
+3 | criterion       | MSELoss    | 0     
+-----------------------------------------------
+629 M     Trainable params
+7.2 M     Non-trainable params
+636 M     Total params
+2,545.490 Total estimated model params size (MB)
+SLURM auto-requeueing enabled. Setting signal handlers.
+slurmstepd: error: *** JOB 1617661 ON tc-dgx009 CANCELLED AT 2023-08-29T14:38:06 ***
