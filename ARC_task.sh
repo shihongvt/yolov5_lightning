@@ -10,6 +10,8 @@
 #SBATCH --output=out.log
 #SBATCH --error=out.err
 
+module load Anaconda3/2020.11
+source activate pytorch
 python yolov5_lightning.py
 
 # in terminal, run `sbatch ARC_task.sh`

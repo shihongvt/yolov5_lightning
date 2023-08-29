@@ -21,4 +21,23 @@ HPU available: False, using: 0 HPUs
 636 M     Total params
 2,545.490 Total estimated model params size (MB)
 SLURM auto-requeueing enabled. Setting signal handlers.
-slurmstepd: error: *** JOB 1617661 ON tc-dgx009 CANCELLED AT 2023-08-29T14:38:06 ***
+`Trainer.fit` stopped: `max_epochs=10` reached.
+Traceback (most recent call last):
+  File "/home/shihong/yolov5_lightning/yolov5_lightning.py", line 175, in <module>
+    trainer.test(model, datamodule=data_module)
+  File "/home/shihong/.conda/envs/pytorch/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 742, in test
+    return call._call_and_handle_interrupt(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/shihong/.conda/envs/pytorch/lib/python3.11/site-packages/pytorch_lightning/trainer/call.py", line 43, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/shihong/.conda/envs/pytorch/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 785, in _test_impl
+    results = self._run(model, ckpt_path=ckpt_path)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/shihong/.conda/envs/pytorch/lib/python3.11/site-packages/pytorch_lightning/trainer/trainer.py", line 928, in _run
+    _verify_loop_configurations(self)
+  File "/home/shihong/.conda/envs/pytorch/lib/python3.11/site-packages/pytorch_lightning/trainer/configuration_validator.py", line 43, in _verify_loop_configurations
+    __verify_eval_loop_configuration(model, "test")
+  File "/home/shihong/.conda/envs/pytorch/lib/python3.11/site-packages/pytorch_lightning/trainer/configuration_validator.py", line 107, in __verify_eval_loop_configuration
+    raise MisconfigurationException(f"No `{step_name}()` method defined to run `Trainer.{trainer_method}`.")
+lightning_fabric.utilities.exceptions.MisconfigurationException: No `test_step()` method defined to run `Trainer.test`.
