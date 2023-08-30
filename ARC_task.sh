@@ -10,8 +10,16 @@
 #SBATCH --output=out.log
 #SBATCH --error=out.err
 
+# Load the required setup module first
+module load apps site/tinkercliffs/easybuild/setup
+
+# Now you can load Anaconda3/2020.11
 module load Anaconda3/2020.11
+
+# Activate your Python environment
 source activate pytorch
+
+# Run your script
 python yolov5_lightning.py
 
 # in terminal, run `sbatch ARC_task.sh`

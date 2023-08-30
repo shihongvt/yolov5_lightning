@@ -9,12 +9,7 @@ from torch.optim import Adam
 import torch.nn as nn
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-# -*- coding: utf-8 -*-
-
 # Dataset Directory Structure:
-
-
-
 
 # CustomDataset Class: fetch individual image-label pairs (given an index)
 
@@ -48,7 +43,7 @@ class CustomDataset(Dataset):
 
 class CustomDataModule(pl.LightningDataModule):
     def __init__(
-        self, image_folder, label_file, transform, batch_size=4, val_split=0.2
+        self, image_folder, label_file, transform, batch_size=4, val_split=0.2, test_split=0.1
     ):
         super(CustomDataModule, self).__init__()
         self.image_folder = image_folder
@@ -62,9 +57,11 @@ class CustomDataModule(pl.LightningDataModule):
             lambda x: os.path.join(self.image_folder, x)
         )
 
-        train_len = int((1.0 - val_split) * len(all_data))
-        self.train_data, self.val_data = torch.utils.data.random_split(
-            all_data, [train_len, len(all_data) - train_len]
+        train_len = int((1.0 - val_split - test_split) * len(all_data))
+        val_len = int(val_split * len(all_data))
+        
+        self.train_data, self.val_data, self.test_data = torch.utils.data.random_split(
+            all_data, [train_len, val_len, len(all_data) - train_len - val_len]
         )
 
     def train_dataloader(self):
@@ -77,6 +74,13 @@ class CustomDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             CustomDataset(self.val_data, transform=self.transform),
+            batch_size=self.batch_size,
+            shuffle=False,
+        )
+    
+    def test_dataloader(self):
+        return DataLoader(
+            CustomDataset(self.test_data, transform=self.transform),
             batch_size=self.batch_size,
             shuffle=False,
         )
@@ -123,21 +127,27 @@ class YOLOv5Regression(pl.LightningModule):
         x, y = batch
         y_hat = self(x).squeeze()
         loss = self.criterion(y_hat, y.float())
-        if not hasattr(self, "val_losses"):
-            self.val_losses = []
-        self.val_losses.append(loss)
-        self.log("val_loss_step", loss)
-        return {"val_loss": loss}
+        self.val_losses.append(loss.detach())
+        return {"val_loss": loss.detach()}  # detach the loss from the computation graph
 
-    def on_validation_epoch_end(self):
-        avg_loss = torch.mean(torch.stack(self.val_losses))
+    def validation_epoch_end(self, outputs):
+        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         self.log("avg_val_loss", avg_loss)
-        # reset the val_losses for the next epoch
-        self.val_losses = []
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-3)
         return optimizer
+    
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self(x).squeeze()
+        loss = self.criterion(y_hat, y.float())
+        return {"test_loss": loss.detach()}
+
+    def test_epoch_end(self, outputs):
+        avg_test_loss = torch.stack([x['test_loss'] for x in outputs]).mean()
+        print(f"Average Test Loss: {avg_test_loss}")
+
 
 
 transform = transforms.Compose(
