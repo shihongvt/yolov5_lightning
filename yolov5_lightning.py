@@ -110,6 +110,9 @@ class YOLOv5Regression(pl.LightningModule):
         )
         self.criterion = nn.MSELoss()
 
+        # Initialize val_losses as an empty list
+        self.val_losses = []
+
     def forward(self, x):
         x = self.features(x)
         return self.regression_head(x)
@@ -130,9 +133,10 @@ class YOLOv5Regression(pl.LightningModule):
         self.val_losses.append(loss.detach())
         return {"val_loss": loss.detach()}  # detach the loss from the computation graph
 
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+    def on_validation_epoch_end(self):
+        avg_loss = torch.mean(torch.tensor(self.val_losses))
         self.log("avg_val_loss", avg_loss)
+        self.val_losses = [] 
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=1e-3)
@@ -142,13 +146,20 @@ class YOLOv5Regression(pl.LightningModule):
         x, y = batch
         y_hat = self(x).squeeze()
         loss = self.criterion(y_hat, y.float())
+    
+        if not hasattr(self, 'test_losses'):
+            self.test_losses = []
+        self.test_losses.append(loss.detach())
+    
         return {"test_loss": loss.detach()}
-
-    def test_epoch_end(self, outputs):
-        avg_test_loss = torch.stack([x['test_loss'] for x in outputs]).mean()
-        print(f"Average Test Loss: {avg_test_loss}")
-
-
+    
+    
+    def on_test_epoch_end(self):
+        if hasattr(self, 'test_losses'):
+            avg_test_loss = torch.stack(self.test_losses).mean()
+            print(f"Average Test Loss: {avg_test_loss}")
+            
+            del self.test_losses
 
 transform = transforms.Compose(
     [
