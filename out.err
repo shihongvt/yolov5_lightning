@@ -2,16 +2,23 @@
 Inactive Modules:
   1) cray     2) craype-network-infiniband     3) craype-x86-rome
 
+Due to MODULEPATH changes, the following have been reloaded:
+  1) Anaconda3/2020.11
+
+/home/shihong/.local/lib/python3.8/site-packages/pandas/core/computation/expressions.py:20: UserWarning: Pandas requires version '2.7.3' or newer of 'numexpr' (version '2.7.1' currently installed).
+  from pandas.core.computation.check import NUMEXPR_INSTALLED
 Using cache found in /home/shihong/.cache/torch/hub/ultralytics_yolov5_master
-YOLOv5 🚀 2023-8-28 Python-3.11.4 torch-2.0.1 CPU
+YOLOv5 🚀 2023-8-28 Python-3.8.5 torch-2.0.1+cu117 CUDA:0 (NVIDIA A100-SXM4-80GB, 81251MiB)
 
 Fusing layers... 
 YOLOv5s summary: 213 layers, 7225885 parameters, 0 gradients
 Adding AutoShape... 
-GPU available: False, used: False
+GPU available: True (cuda), used: True
 TPU available: False, using: 0 TPU cores
 IPU available: False, using: 0 IPUs
 HPU available: False, using: 0 HPUs
+You are using a CUDA device ('NVIDIA A100-SXM4-80GB') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
 
   | Name            | Type       | Params
 -----------------------------------------------
@@ -26,4 +33,5 @@ HPU available: False, using: 0 HPUs
 2,545.490 Total estimated model params size (MB)
 SLURM auto-requeueing enabled. Setting signal handlers.
 `Trainer.fit` stopped: `max_epochs=10` reached.
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
 SLURM auto-requeueing enabled. Setting signal handlers.
